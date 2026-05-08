@@ -1,11 +1,12 @@
 const API_URL = import.meta.env.VITE_API_URL || "/api";
 
 async function request(path, options = {}) {
+  const isFormData = options.body instanceof FormData;
   const response = await fetch(`${API_URL}${path}`, {
     ...options,
     credentials: "include",
     headers: {
-      "Content-Type": "application/json",
+      ...(!isFormData ? { "Content-Type": "application/json" } : {}),
       ...(options.headers || {})
     }
   });
@@ -38,8 +39,17 @@ export const api = {
   saveInvoice: (id) => request(`/pay/${id}/save`, { method: "POST", body: JSON.stringify({}) }),
   solanaUrl: (id) => request(`/pay/${id}/solana-url`),
   savedInvoices: () => request("/saved-invoices"),
+  invoices: () => request("/invoices"),
   invoiceTemplates: () => request("/invoice-templates"),
   invoiceTemplate: (name) => request(`/invoice-templates/${encodeURIComponent(name)}`),
+  extractInvoiceTemplateFromPdf: (file) => {
+    const formData = new FormData();
+    formData.append("pdf", file);
+    return request("/invoice-templates/extract-pdf", {
+      method: "POST",
+      body: formData
+    });
+  },
   createInvoiceTemplate: (payload) => request("/invoice-templates", {
     method: "POST",
     body: JSON.stringify(payload)

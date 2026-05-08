@@ -1,14 +1,16 @@
-import { FilePlus2, Trash2, X } from "lucide-react";
-import { useEffect, useState } from "react";
+import { FilePlus2, FileUp, Trash2, X } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import { InvoiceTemplateEditor } from "../components/InvoiceTemplateEditor.jsx";
 import { api } from "../services/api.js";
 
 export function InvoicesPage() {
+  const pdfInputRef = useRef(null);
   const [templates, setTemplates] = useState([]);
   const [selectedName, setSelectedName] = useState("");
   const [selectedTemplate, setSelectedTemplate] = useState(null);
   const [nameDraft, setNameDraft] = useState("");
   const [creating, setCreating] = useState(false);
+  const [extracting, setExtracting] = useState(false);
   const [importChoice, setImportChoice] = useState("");
   const [notice, setNotice] = useState("");
   const [error, setError] = useState("");
@@ -40,7 +42,7 @@ export function InvoicesPage() {
     setNameDraft("");
     setCreating(true);
     setImportChoice("");
-    setNotice("New document ready. Click Export to save it to the database.");
+    setNotice("");
     setError("");
   }
 
@@ -94,6 +96,31 @@ export function InvoicesPage() {
     await selectTemplate(name);
   }
 
+  async function extractFromPdf(file) {
+    if (!file) return;
+    setError("");
+    setNotice("Extracting PDF...");
+    setExtracting(true);
+
+    try {
+      const result = await api.extractInvoiceTemplateFromPdf(file);
+      const suggestedName = file.name.replace(/\.pdf$/i, "").trim();
+      setSelectedName("");
+      setNameDraft(suggestedName);
+      setSelectedTemplate({ name: "", html: result.html });
+      setCreating(true);
+      setImportChoice("");
+      const warnings = result.warnings?.length ? ` ${result.warnings.join(" ")}` : "";
+      setNotice(`PDF extracted. Review it in the editor, then Export to save.${warnings}`);
+    } catch (err) {
+      setNotice("");
+      setError(err.message);
+    } finally {
+      setExtracting(false);
+      if (pdfInputRef.current) pdfInputRef.current.value = "";
+    }
+  }
+
   const hasEditor = creating || selectedTemplate;
 
   return (
@@ -101,7 +128,7 @@ export function InvoicesPage() {
       <aside className="invoice-template-rail">
         <div className="rail-header">
           <div>
-            <h1>Invoices</h1>
+            <h1>Invoice Templates</h1>
             <p>HTML templates</p>
           </div>
           <button className="icon-button" title="New template" onClick={startNewTemplate}>
@@ -112,6 +139,20 @@ export function InvoicesPage() {
         <button className="button primary full-width" onClick={startNewTemplate}>
           <FilePlus2 size={18} />New Template
         </button>
+        <button
+          className="button secondary full-width"
+          disabled={extracting}
+          onClick={() => pdfInputRef.current?.click()}
+        >
+          <FileUp size={18} />{extracting ? "Extracting..." : "Extract from PDF"}
+        </button>
+        <input
+          ref={pdfInputRef}
+          type="file"
+          accept="application/pdf"
+          hidden
+          onChange={(event) => extractFromPdf(event.target.files?.[0])}
+        />
 
         <div className="template-list">
           {templates.map((template) => (
@@ -132,25 +173,12 @@ export function InvoicesPage() {
         {error && <p className="error-box">{error}</p>}
         {notice && <p className="success-box">{notice}</p>}
 
-        <div className="card invoice-empty-state">
-          <h2>{templates.length ? "Select a template" : "No templates yet"}</h2>
-          <p className="muted">
-            {templates.length
-              ? "Select an invoice template from the list, or create a new document."
-              : "Create the first HTML invoice template so it can be imported and edited later."}
-          </p>
-          <button className="button primary" onClick={startNewTemplate}>
-            <FilePlus2 size={18} />Create New Document
-          </button>
-        </div>
-      </main>
-
-      {hasEditor && (
-        <div className="invoice-editor-overlay">
-          <div className="invoice-editor-overlay-topbar">
+        {hasEditor ? (
+          <section className="invoice-editor-panel">
+            <div className="invoice-editor-panel-topbar">
             <div className="overlay-title">
               <strong>{selectedName || "New invoice template"}</strong>
-              <span>Editor is open fullscreen. Export saves the template to the database.</span>
+              <span>Export saves the template to the database.</span>
             </div>
 
             <label className="overlay-name-field">
@@ -189,17 +217,28 @@ export function InvoicesPage() {
             </button>
           </div>
 
-          {error && <p className="overlay-message error-box">{error}</p>}
-          {notice && <p className="overlay-message success-box">{notice}</p>}
-
+          {error && <p className="error-box">{error}</p>}
           <InvoiceTemplateEditor
             key={selectedName || (creating ? "new-template" : "blank")}
             initialHtml={selectedTemplate?.html || ""}
             onExport={exportTemplate}
             onImportRequest={showImportHint}
           />
-        </div>
-      )}
+          </section>
+        ) : (
+          <div className="card invoice-empty-state">
+            <h2>{templates.length ? "Select a template" : "No templates yet"}</h2>
+            <p className="muted">
+              {templates.length
+                ? "Select an invoice template from the list, or create a new document."
+                : "Create the first HTML invoice template so it can be imported and edited later."}
+            </p>
+            <button className="button primary" onClick={startNewTemplate}>
+              <FilePlus2 size={18} />Create New Document
+            </button>
+          </div>
+        )}
+      </main>
     </div>
   );
 }

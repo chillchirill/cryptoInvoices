@@ -54,6 +54,21 @@ SavedInvoice.init(
   { sequelize, modelName: "SavedInvoice", tableName: "saved_invoices" }
 );
 
+export class Invoice extends Model {}
+Invoice.init(
+  {
+    id: { type: DataTypes.STRING(32), primaryKey: true },
+    senderUserId: { type: DataTypes.UUID, allowNull: false },
+    receiverUserId: { type: DataTypes.UUID, allowNull: true },
+    walletAlias: { type: DataTypes.STRING(80), allowNull: false },
+    walletAddress: { type: DataTypes.STRING, allowNull: false },
+    templateName: { type: DataTypes.STRING(120), allowNull: false },
+    templateHtml: { type: DataTypes.TEXT, allowNull: false },
+    fieldValues: { type: DataTypes.JSONB, allowNull: false, defaultValue: {} }
+  },
+  { sequelize, modelName: "Invoice", tableName: "invoices" }
+);
+
 export class InvoiceTemplate extends Model {}
 InvoiceTemplate.init(
   {
@@ -70,8 +85,14 @@ User.hasMany(Wallet, { foreignKey: "userId" });
 Wallet.belongsTo(User, { foreignKey: "userId" });
 User.hasMany(InvoiceTemplate, { foreignKey: "userId" });
 InvoiceTemplate.belongsTo(User, { foreignKey: "userId" });
+User.hasMany(Invoice, { foreignKey: "senderUserId", as: "sentInvoices" });
+User.hasMany(Invoice, { foreignKey: "receiverUserId", as: "receivedInvoices" });
+Invoice.belongsTo(User, { foreignKey: "senderUserId", as: "sender" });
+Invoice.belongsTo(User, { foreignKey: "receiverUserId", as: "receiver" });
+Invoice.belongsTo(Transaction, { foreignKey: "id" });
+Transaction.hasOne(Invoice, { foreignKey: "id" });
 SavedInvoice.belongsTo(User, { foreignKey: "clientUserId" });
 SavedInvoice.belongsTo(Transaction, { foreignKey: "transactionId" });
 Transaction.hasMany(SavedInvoice, { foreignKey: "transactionId" });
 
-export const models = { User, AuthSession, Wallet, Transaction, SavedInvoice, InvoiceTemplate };
+export const models = { User, AuthSession, Wallet, Transaction, SavedInvoice, Invoice, InvoiceTemplate };

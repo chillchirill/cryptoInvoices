@@ -1,8 +1,31 @@
 import { Router } from "express";
+import multer from "multer";
 import { InvoiceTemplate } from "../models/index.js";
+import { extractInvoiceTemplateFromPdf } from "../services/pdfInvoiceTemplateService.js";
+import { extractActiveFields, missingRequiredInvoiceFields } from "../utils/invoiceFields.js";
 import { asyncRoute, httpError } from "../utils/http.js";
 
 export const invoiceTemplatesRouter = Router();
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 10 * 1024 * 1024 }
+});
+
+function uploadPdf(req, res, next) {
+  upload.single("pdf")(req, res, (error) => {
+    if (!error) {
+      next();
+      return;
+    }
+
+    if (error instanceof multer.MulterError) {
+      next(httpError(400, error.code === "LIMIT_FILE_SIZE" ? "PDF file is too large" : error.message));
+      return;
+    }
+
+    next(error);
+  });
+}
 
 function cleanName(value) {
   const name = String(value || "").trim();
@@ -26,6 +49,9 @@ function validateHtml(html) {
     if (pattern.test(value)) throw httpError(400, message);
   }
 
+  const missing = missingRequiredInvoiceFields(extractActiveFields(value));
+  if (missing.length) throw httpError(400, `Template must include active inputs: ${missing.join(", ")}`);
+
   return value;
 }
 
@@ -45,6 +71,7 @@ async function nextTemplateName(userId) {
 function publicSummary(template) {
   return {
     name: template.name,
+    activeFields: extractActiveFields(template.html),
     updatedAt: template.updatedAt,
     createdAt: template.createdAt
   };
@@ -60,11 +87,21 @@ function publicTemplate(template) {
 invoiceTemplatesRouter.get("/", asyncRoute(async (req, res) => {
   const templates = await InvoiceTemplate.findAll({
     where: { userId: req.user.id },
-    attributes: ["name", "createdAt", "updatedAt"],
+    attributes: ["name", "html", "createdAt", "updatedAt"],
     order: [["updatedAt", "DESC"]]
   });
 
   res.json(templates.map(publicSummary));
+}));
+
+invoiceTemplatesRouter.post("/extract-pdf", uploadPdf, asyncRoute(async (req, res) => {
+  const file = req.file;
+  if (!file) throw httpError(400, "PDF file is required");
+  const isPdf = file.mimetype === "application/pdf" || /\.pdf$/i.test(file.originalname || "");
+  if (!isPdf) throw httpError(400, "Only PDF files can be extracted");
+
+  const result = await extractInvoiceTemplateFromPdf(file.buffer);
+  res.json(result);
 }));
 
 invoiceTemplatesRouter.get("/:name", asyncRoute(async (req, res) => {

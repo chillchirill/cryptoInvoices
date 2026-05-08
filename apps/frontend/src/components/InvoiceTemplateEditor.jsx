@@ -4,6 +4,7 @@ import { Rnd } from "react-rnd";
 
 const PAGE_SIZE = { width: 794, height: 1123 };
 const DEFAULT_STYLE = { fontSize: 18, fontFamily: "Arial", color: "#111827" };
+const REQUIRED_FIELDS = ["money", "message"];
 
 const STARTER_ELEMENTS = [
   {
@@ -36,6 +37,30 @@ const STARTER_ELEMENTS = [
     name: "client_name",
     x: 455,
     y: 150,
+    width: 220,
+    height: 38,
+    fontSize: 16,
+    fontFamily: "Arial",
+    color: "#111827"
+  },
+  {
+    id: "input-money",
+    type: "input",
+    name: "money",
+    x: 455,
+    y: 205,
+    width: 220,
+    height: 38,
+    fontSize: 16,
+    fontFamily: "Arial",
+    color: "#111827"
+  },
+  {
+    id: "input-message",
+    type: "input",
+    name: "message",
+    x: 455,
+    y: 260,
     width: 220,
     height: 38,
     fontSize: 16,
@@ -234,6 +259,10 @@ export function InvoiceTemplateEditor({ initialHtml = "", onExport, onImportRequ
         })),
     [elements]
   );
+  const missingRequiredFields = useMemo(() => {
+    const names = new Set(activeFields.map((field) => field.name));
+    return REQUIRED_FIELDS.filter((field) => !names.has(field));
+  }, [activeFields]);
 
   function updateElement(id, updater) {
     setElements((current) =>
@@ -312,6 +341,14 @@ export function InvoiceTemplateEditor({ initialHtml = "", onExport, onImportRequ
 
   async function exportHtml() {
     const cleaned = elements.filter((element) => element.type !== "input" || element.name.trim());
+    const names = new Set(cleaned.filter((element) => element.type === "input").map((element) => element.name.trim()));
+    const missing = REQUIRED_FIELDS.filter((field) => !names.has(field));
+    if (missing.length) {
+      setElements(cleaned);
+      setStatus(`Cannot export. Missing active input: ${missing.join(", ")}`);
+      return;
+    }
+
     const html = elementsToHtml(cleaned);
     setElements(cleaned);
     setDeleteTargetId((currentTarget) => (cleaned.some((element) => element.id === currentTarget) ? currentTarget : null));
@@ -344,6 +381,10 @@ export function InvoiceTemplateEditor({ initialHtml = "", onExport, onImportRequ
   }
 
   const toolbarStyle = selectedElement && selectedElement.type !== "image" ? selectedElement : draftStyle;
+  const cannotExport = saving || missingRequiredFields.length > 0;
+  const exportTitle = missingRequiredFields.length
+    ? `Missing required active inputs: ${missingRequiredFields.join(", ")}`
+    : "Export";
 
   return (
     <main className="invoice-editor-app">
@@ -442,7 +483,7 @@ export function InvoiceTemplateEditor({ initialHtml = "", onExport, onImportRequ
           <button type="button" data-delete-action className="editor-tool-button danger-tool" disabled={!selectedId} onClick={deleteSelected}>
             <MiniIcon name="delete" /> <span>Delete</span>
           </button>
-          <button type="button" className="editor-tool-button" disabled={saving} onClick={exportHtml}>
+          <button type="button" className="editor-tool-button" disabled={cannotExport} title={exportTitle} onClick={exportHtml}>
             <MiniIcon name="export" /> <span>{saving ? "Saving..." : "Export"}</span>
           </button>
           <button type="button" className="editor-tool-button" onClick={onImportRequest}>
@@ -455,6 +496,9 @@ export function InvoiceTemplateEditor({ initialHtml = "", onExport, onImportRequ
 
         <section className="active-fields-panel">
           <h2>Active fields</h2>
+          {missingRequiredFields.length > 0 && (
+            <p className="warning-box">Required active inputs missing: {missingRequiredFields.join(", ")}</p>
+          )}
           {activeFields.length ? (
             <ul>
               {activeFields.map((field) => (

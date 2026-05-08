@@ -24,6 +24,27 @@ VITE_PUBLIC_PAYMENT_ORIGIN=http://192.168.137.1:5173
 
 Пізніше замініть це значення в `.env` на ваш домен, наприклад `https://pay.example.com`.
 
+## Ubuntu start.sh
+
+На Ubuntu можна скористатися універсальним скриптом, який встановить Node.js/npm і Docker, якщо їх немає, підніме PostgreSQL, встановить npm dependencies і запустить потрібний режим:
+
+```bash
+chmod +x start.sh
+./start.sh
+```
+
+Корисні режими:
+
+```bash
+APP_ORIGIN=https://your-domain.com ./start.sh prod
+./start.sh start
+./start.sh dev
+./start.sh build
+./start.sh test
+```
+
+За замовчуванням `./start.sh` запускає production режим: білдить frontend і стартує Express на `http://localhost:4000`, який віддає frontend як статику.
+
 ## Що є всередині
 
 - React/Vite frontend українською мовою.

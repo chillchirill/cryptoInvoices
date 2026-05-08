@@ -37,7 +37,8 @@ export function AppShell() {
             <>
               <NavLink to="/wallets"><WalletCards size={18} />Wallets</NavLink>
               <NavLink to="/requests"><ReceiptText size={18} />Payment Requests</NavLink>
-              <NavLink to="/invoices"><FileText size={18} />Invoices</NavLink>
+              <NavLink to="/business-invoices"><ReceiptText size={18} />Invoices</NavLink>
+              <NavLink to="/invoices"><FileText size={18} />Invoice Templates</NavLink>
             </>
           ) : (
             <NavLink to="/saved"><ReceiptText size={18} />Saved Invoices</NavLink>

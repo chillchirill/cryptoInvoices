@@ -1,5 +1,5 @@
 import { ExternalLink, LogIn } from "lucide-react";
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { api } from "../services/api.js";
 
@@ -15,7 +15,11 @@ export function PayPage() {
       api.publicInvoice(id),
       api.session().catch(() => ({ authenticated: false }))
     ]);
-    setInvoice(invoiceData);
+    if (sessionData.authenticated && sessionData.user?.role === "client" && !invoiceData.saved) {
+      setInvoice(await api.saveInvoice(id));
+    } else {
+      setInvoice(invoiceData);
+    }
     setSession(sessionData);
   }
 
@@ -42,23 +46,54 @@ export function PayPage() {
     }
   }
 
+  function humanizeFieldName(name) {
+    const words = String(name || "")
+      .replace(/([a-z\d])([A-Z])/g, "$1 $2")
+      .replace(/[_-]+/g, " ")
+      .trim()
+      .split(/\s+/)
+      .filter(Boolean);
+
+    if (!words.length) return "";
+    return words.map((word, index) => {
+      const lower = word.toLowerCase();
+      return index === 0 ? lower.charAt(0).toUpperCase() + lower.slice(1) : lower;
+    }).join(" ");
+  }
+
   if (error) return <div className="pay-page"><p className="error-box">{error}</p></div>;
   if (!invoice) return <div className="pay-page"><p className="muted">Loading...</p></div>;
 
   const loginUrl = `/auth?mode=login&redirect=${encodeURIComponent(`/pay/${id}`)}&save=1`;
   const registerUrl = `/auth?mode=register&role=client&redirect=${encodeURIComponent(`/pay/${id}`)}&save=1`;
   const canSave = session?.authenticated && session.user?.role === "client" && !invoice.saved;
+  const fieldEntries = Object.entries(invoice.fieldValues || {});
 
   return (
     <div className="pay-page">
       <div className="payment-card">
         <p className="eyebrow">Invoice #{invoice.id}</p>
-        <h1>{invoice.name}</h1>
-        <div className="amount">EUR {invoice.amountEur}</div>
+        <h1>{invoice.fieldValues?.message || invoice.templateName || invoice.displayName || invoice.name || "Invoice"}</h1>
         <dl className="details">
           <dt>Wallet</dt><dd>{invoice.alias}</dd>
           <dt>Address</dt><dd className="mono">{invoice.address}</dd>
+          {invoice.templateName && <><dt>Template</dt><dd>{invoice.templateName}</dd></>}
+          {invoice.amountEur && <><dt>Legacy amount</dt><dd>EUR {invoice.amountEur}</dd></>}
         </dl>
+
+        {fieldEntries.length > 0 && (
+          <div className="invoice-fields">
+            <h2>Invoice details</h2>
+            <dl className="details">
+              {fieldEntries.map(([name, value]) => (
+                <Fragment key={name}>
+                  <dt>{humanizeFieldName(name)}</dt>
+                  <dd>{String(value)}</dd>
+                </Fragment>
+              ))}
+            </dl>
+          </div>
+        )}
 
         <button className="pay-button" onClick={pay}>
           Pay <ExternalLink size={22} />

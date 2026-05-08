@@ -5,7 +5,7 @@ import "./models/index.js";
 
 async function start() {
   await sequelize.authenticate();
-  await sequelize.sync();
+  await sequelize.sync({ alter: true });
 
   createApp().listen(env.port, () => {
     console.log(`${env.appName} API listening on http://localhost:${env.port}`);

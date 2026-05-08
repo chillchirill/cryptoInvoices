@@ -3,6 +3,7 @@ import { createRoot } from "react-dom/client";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { AppShell } from "./components/AppShell.jsx";
 import { AuthPage } from "./pages/AuthPage.jsx";
+import { BusinessInvoicesPage } from "./pages/BusinessInvoicesPage.jsx";
 import { InvoicesPage } from "./pages/InvoicesPage.jsx";
 import { LandingPage } from "./pages/LandingPage.jsx";
 import { PayPage } from "./pages/PayPage.jsx";
@@ -21,6 +22,7 @@ createRoot(document.getElementById("root")).render(
         <Route element={<AppShell />}>
           <Route path="/wallets" element={<WalletsPage />} />
           <Route path="/requests" element={<PaymentRequestsPage />} />
+          <Route path="/business-invoices" element={<BusinessInvoicesPage />} />
           <Route path="/invoices" element={<InvoicesPage />} />
           <Route path="/saved" element={<SavedInvoicesPage />} />
         </Route>
