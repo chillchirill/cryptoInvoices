@@ -2,6 +2,8 @@
 
 Легка демо-програма для створення QR-посилань на оплату Solana.
 
+Повна документація українською: [DOCUMENTATION_UA.md](DOCUMENTATION_UA.md).
+
 ## Запуск
 
 ```powershell

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { Download, Eraser, FileInput, Image, Move, Trash2, Type, Upload } from "lucide-react";
 import { Rnd } from "react-rnd";
 
 const PAGE_SIZE = { width: 794, height: 1123 };
@@ -176,16 +177,17 @@ function getElementsFromHtml(html) {
 
 function MiniIcon({ name }) {
   const icons = {
-    text: "T",
-    input: "[]",
-    image: "Img",
-    delete: "Del",
-    export: "Exp",
-    import: "Imp",
-    clear: "Clr",
-    move: "+"
+    text: Type,
+    input: FileInput,
+    image: Image,
+    delete: Trash2,
+    export: Download,
+    import: Upload,
+    clear: Eraser,
+    move: Move
   };
-  return <span className="mini-icon">{icons[name]}</span>;
+  const Icon = icons[name];
+  return <Icon className="mini-icon" size={16} aria-hidden="true" />;
 }
 
 export function InvoiceTemplateEditor({ initialHtml = "", onExport, onImportRequest }) {
