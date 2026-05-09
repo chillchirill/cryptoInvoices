@@ -29,7 +29,7 @@ Modes:
   help    Show this help.
 
 Environment:
-  APP_ORIGIN=http://localhost:4000     Public app URL baked into production QR links.
+  APP_ORIGIN=https://pairhold.com      Public app URL baked into production QR links.
   PORT=4000                            Backend port used by npm start.
   DOCKER_TIMEOUT_SECONDS=180           Seconds to wait for the Docker engine.
   NODE_MAJOR_REQUIRED=22               Minimum Node.js major version.
@@ -269,7 +269,7 @@ ensure_dependencies() {
 }
 
 configure_production_env() {
-  export APP_ORIGIN="${APP_ORIGIN:-http://localhost:${PORT:-4000}}"
+  export APP_ORIGIN="${APP_ORIGIN:-https://pairhold.com}"
   export VITE_PUBLIC_PAYMENT_ORIGIN="$APP_ORIGIN"
   export FRONTEND_URL="${FRONTEND_URL:-$APP_ORIGIN}"
   ok "Production app origin: $APP_ORIGIN"

@@ -4,7 +4,16 @@ import { useEffect, useMemo, useState } from "react";
 import { InvoiceDocumentViewer } from "../components/InvoiceDocumentViewer.jsx";
 import { api } from "../services/api.js";
 
-const paymentOrigin = (import.meta.env.VITE_PUBLIC_PAYMENT_ORIGIN || window.location.origin).replace(/\/$/, "");
+const PAIRHOLD_ORIGIN = "https://pairhold.com";
+
+function resolvePaymentOrigin(origin) {
+  const normalizedOrigin = String(origin || "").replace(/\/$/, "");
+  return normalizedOrigin === "http://localhost:4000" || normalizedOrigin === "localhost:4000"
+    ? PAIRHOLD_ORIGIN
+    : normalizedOrigin;
+}
+
+const paymentOrigin = resolvePaymentOrigin(import.meta.env.VITE_PUBLIC_PAYMENT_ORIGIN || window.location.origin);
 const REQUIRED_FIELDS = ["money", "message"];
 
 export function PaymentRequestsPage() {
